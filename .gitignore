@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+chroma_store/
+uploads/
+*.pdf
+.pytest_cache/
+.coverage
