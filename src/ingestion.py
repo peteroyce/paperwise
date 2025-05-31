@@ -142,3 +142,4 @@ def delete_document(doc_id: str) -> int:
     if existing["ids"]:
         collection.delete(ids=existing["ids"])
     return len(existing["ids"])
+chunk overlap note
