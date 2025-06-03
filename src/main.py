@@ -126,3 +126,4 @@ def query_stream(body: QueryRequest):
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generator(), media_type="text/event-stream")
+# SSE streaming via text/event-stream
