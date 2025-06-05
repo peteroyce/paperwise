@@ -143,3 +143,4 @@ def delete_document(doc_id: str) -> int:
         collection.delete(ids=existing["ids"])
     return len(existing["ids"])
 chunk overlap note
+# re-ingest deletes old chunks before inserting new ones
