@@ -144,3 +144,4 @@ def delete_document(doc_id: str) -> int:
     return len(existing["ids"])
 chunk overlap note
 # re-ingest deletes old chunks before inserting new ones
+# improved overlap: last CHUNK_OVERLAP words of chunk N == first CHUNK_OVERLAP of chunk N+1
