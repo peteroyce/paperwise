@@ -48,21 +48,28 @@ def extract_text(pdf_path: Path) -> list[tuple[int, str]]:
 
 
 def chunk_text(pages: list[tuple[int, str]]) -> list[dict]:
-    """Split page text into overlapping chunks with metadata."""
+    """Split page text into overlapping chunks with metadata.
+
+    Each new chunk starts CHUNK_SIZE - CHUNK_OVERLAP words after the previous
+    chunk's start, so the last CHUNK_OVERLAP words of chunk N are the first
+    CHUNK_OVERLAP words of chunk N+1.
+    """
     chunks = []
     for page_num, text in pages:
         words = text.split()
         start = 0
         while start < len(words):
             end = min(start + CHUNK_SIZE, len(words))
-            chunk_text = " ".join(words[start:end])
+            chunk_words = words[start:end]
             chunks.append({
-                "text": chunk_text,
+                "text": " ".join(chunk_words),
                 "page": page_num,
                 "chunk_index": len(chunks),
             })
             if end == len(words):
                 break
+            # Advance by CHUNK_SIZE - CHUNK_OVERLAP so adjacent chunks share
+            # CHUNK_OVERLAP words at their boundary.
             start += CHUNK_SIZE - CHUNK_OVERLAP
     logger.debug("Produced %d chunks", len(chunks))
     return chunks
@@ -74,6 +81,11 @@ def ingest_pdf(pdf_path: Path, doc_id: str | None = None) -> dict:
 
     Returns a summary dict with doc_id and chunk count.
     ChromaDB uses its built-in embedding function (all-MiniLM-L6-v2 by default).
+
+    Cleanup rollback: if ChromaDB add raises after old chunks were deleted, the
+    deletion is already committed (ChromaDB has no transactions), so we log the
+    inconsistency. If the add itself fails the collection is left empty for this
+    doc_id — on re-ingest the delete step is a no-op and ingestion retries cleanly.
     """
     doc_id = doc_id or hashlib.md5(pdf_path.read_bytes()).hexdigest()
     pages = extract_text(pdf_path)
@@ -91,7 +103,16 @@ def ingest_pdf(pdf_path: Path, doc_id: str | None = None) -> dict:
     documents = [c["text"] for c in chunks]
     metadatas = [{"doc_id": doc_id, "page": c["page"], "filename": pdf_path.name} for c in chunks]
 
-    collection.add(ids=ids, documents=documents, metadatas=metadatas)
+    try:
+        collection.add(ids=ids, documents=documents, metadatas=metadatas)
+    except Exception as exc:
+        logger.error(
+            "ChromaDB add failed for doc_id=%s (%d chunks). "
+            "Collection may be empty for this doc. Re-ingest to recover. Error: %s",
+            doc_id, len(chunks), exc,
+        )
+        raise
+
     logger.info("Ingested %d chunks for doc_id=%s", len(chunks), doc_id)
 
     return {"doc_id": doc_id, "filename": pdf_path.name, "pages": len(pages), "chunks": len(chunks)}
@@ -107,6 +128,13 @@ def retrieve(query: str, doc_id: str | None = None, top_k: int = 5) -> list[dict
         where=where,
         include=["documents", "metadatas", "distances"],
     )
+
+    # Bounds check: ChromaDB returns nested lists; guard against empty results.
+    docs_list = results.get("documents") or []
+    if not docs_list or not docs_list[0]:
+        logger.debug("retrieve: no results found for query=%r doc_id=%r", query, doc_id)
+        return []
+
     chunks = []
     for doc, meta, dist in zip(
         results["documents"][0],
@@ -142,6 +170,3 @@ def delete_document(doc_id: str) -> int:
     if existing["ids"]:
         collection.delete(ids=existing["ids"])
     return len(existing["ids"])
-chunk overlap note
-# re-ingest deletes old chunks before inserting new ones
-# improved overlap: last CHUNK_OVERLAP words of chunk N == first CHUNK_OVERLAP of chunk N+1
