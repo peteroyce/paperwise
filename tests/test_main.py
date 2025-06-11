@@ -90,22 +90,39 @@ def test_upload_oversized_file_rejected(client):
     assert "large" in resp.json()["detail"].lower() or "50" in resp.json()["detail"]
 
 
+def test_upload_path_traversal_rejected(client, tmp_path):
+    """Uploading a file with a path-traversal filename is handled safely.
+
+    The server must strip directory components so the saved file lands
+    inside UPLOAD_DIR, not at an arbitrary path like /etc/passwd.
+    """
+    expected = {"doc_id": "safedoc", "filename": "passwd.pdf", "pages": 1, "chunks": 2}
+    with patch("src.ingestion.ingest_pdf", return_value=expected) as mock_ingest:
+        resp = client.post(
+            "/documents/upload",
+            files={"file": ("../../etc/passwd.pdf", _MINIMAL_PDF, "application/pdf")},
+        )
+    assert resp.status_code == 200
+    # Verify ingest_pdf was called with a path safely within UPLOAD_DIR (no traversal)
+    called_path: Path = mock_ingest.call_args[0][0]
+    from src.config import UPLOAD_DIR
+    assert called_path.parent.resolve() == UPLOAD_DIR.resolve()
+    assert ".." not in called_path.parts
+
+
 def test_upload_valid_pdf_returns_doc_id(client, tmp_path):
-    """Uploading a valid PDF (with mocked extraction) returns doc_id and chunk count."""
-    with patch("src.ingestion.extract_text", return_value=[(1, "Hello world content " * 30)]):
+    """Uploading a valid PDF (with mocked ingestion) returns doc_id and chunk count."""
+    expected = {"doc_id": "deadbeef", "filename": "test.pdf", "pages": 1, "chunks": 3}
+    with patch("src.ingestion.ingest_pdf", return_value=expected):
         resp = client.post(
             "/documents/upload",
             files={"file": ("test.pdf", _MINIMAL_PDF, "application/pdf")},
         )
-    # Ingestion may succeed or fail depending on pypdf parsing the minimal PDF;
-    # the important thing is that it was NOT rejected for magic bytes / size.
-    # Accept 200 (success) or 500 (pypdf parse error on our minimal PDF).
-    assert resp.status_code in (200, 500)
-    if resp.status_code == 200:
-        data = resp.json()
-        assert data["success"] is True
-        assert "doc_id" in data
-        assert data["chunks"] > 0
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["success"] is True
+    assert "doc_id" in data
+    assert data["chunks"] > 0
 
 
 def test_upload_valid_pdf_with_mocked_ingestion(client, tmp_path):

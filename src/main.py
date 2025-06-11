@@ -104,8 +104,12 @@ async def upload_document(file: UploadFile = File(...), doc_id: Optional[str] = 
             detail="File does not appear to be a valid PDF (missing %PDF magic bytes).",
         )
 
+    safe_name = Path(file.filename).name
+    if not safe_name:
+        raise HTTPException(status_code=400, detail="Invalid filename.")
+
     doc_id = doc_id or uuid.uuid4().hex
-    dest = UPLOAD_DIR / f"{doc_id}_{file.filename}"
+    dest = UPLOAD_DIR / f"{doc_id}_{safe_name}"
     dest.write_bytes(content)
 
     try:

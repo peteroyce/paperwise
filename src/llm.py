@@ -7,7 +7,7 @@ Supports both single-turn and multi-turn (conversation history) modes.
 from __future__ import annotations
 
 import logging
-from typing import Iterator
+from typing import Iterator, Generator, Union
 
 import anthropic
 
@@ -52,7 +52,7 @@ def answer(
     doc_id: str | None = None,
     history: list[dict] | None = None,
     stream: bool = False,
-) -> dict:
+) -> Union[dict, Generator[str, None, None]]:
     """
     Retrieve relevant chunks and ask Claude to answer the query.
 

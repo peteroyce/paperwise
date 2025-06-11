@@ -17,7 +17,7 @@ from typing import Iterator
 import chromadb
 from pypdf import PdfReader
 
-from src.config import CHUNK_OVERLAP, CHUNK_SIZE, CHROMA_PERSIST_DIR
+from src.config import CHUNK_OVERLAP, CHUNK_SIZE, CHROMA_PERSIST_DIR, UPLOAD_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -164,9 +164,15 @@ def list_documents() -> list[dict]:
 
 
 def delete_document(doc_id: str) -> int:
-    """Delete all chunks for a document. Returns number of chunks removed."""
+    """Delete all chunks for a document and remove the PDF file. Returns number of chunks removed."""
     collection = _get_collection()
     existing = collection.get(where={"doc_id": doc_id})
     if existing["ids"]:
         collection.delete(ids=existing["ids"])
+
+    # Remove the corresponding PDF file from disk (pattern: {doc_id}_*)
+    for pdf_file in UPLOAD_DIR.glob(f"{doc_id}_*"):
+        pdf_file.unlink(missing_ok=True)
+        logger.info("Deleted file %s for doc_id=%s", pdf_file.name, doc_id)
+
     return len(existing["ids"])
