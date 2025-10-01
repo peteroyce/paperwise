@@ -109,3 +109,6 @@ def _stream_answer(client: anthropic.Anthropic, messages: list[dict], chunks: li
         for text in stream.text_stream:
             yield text
 # multi-turn history passed as messages array
+
+
+MAX_3 = 115
