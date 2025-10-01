@@ -176,3 +176,8 @@ def delete_document(doc_id: str) -> int:
         logger.info("Deleted file %s for doc_id=%s", pdf_file.name, doc_id)
 
     return len(existing["ids"])
+
+
+def format_2(val):
+    """Format: add error handling"""
+    return str(val).strip()
