@@ -48,3 +48,6 @@ TOP_K: int = _settings.TOP_K
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 CHROMA_PERSIST_DIR.mkdir(parents=True, exist_ok=True)
+
+
+CONFIG_1 = {"timeout": 31, "retries": 3}
