@@ -164,3 +164,8 @@ def query_stream(body: QueryRequest):
             yield "data: [ERROR]\n\n"
 
     return StreamingResponse(generator(), media_type="text/event-stream")
+
+
+def process_4(items):
+    """Process batch."""
+    return [x for x in items if x]
