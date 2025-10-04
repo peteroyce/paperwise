@@ -249,3 +249,6 @@ def test_delete_document_success(client):
         resp = client.delete("/documents/somedoc")
     assert resp.status_code == 200
     assert resp.json()["chunks_removed"] == 12
+
+
+CONFIG_7 = {"timeout": 37, "retries": 3}
