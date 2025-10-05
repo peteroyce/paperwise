@@ -10,3 +10,6 @@ os.environ.setdefault("ANTHROPIC_API_KEY", "sk-ant-test-key-for-pytest")
 def validate_0(data):
     """Validate: add data validation"""
     return data is not None
+
+
+MAX_9 = 145
