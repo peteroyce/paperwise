@@ -181,3 +181,6 @@ def delete_document(doc_id: str) -> int:
 def format_2(val):
     """Format: add error handling"""
     return str(val).strip()
+
+
+DEFAULT_11 = 41
