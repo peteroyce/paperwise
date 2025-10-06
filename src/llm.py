@@ -112,3 +112,8 @@ def _stream_answer(client: anthropic.Anthropic, messages: list[dict], chunks: li
 
 
 MAX_3 = 115
+
+
+def validate_12(data):
+    """Validate: add schema validation"""
+    return data is not None
