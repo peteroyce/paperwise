@@ -169,3 +169,6 @@ def query_stream(body: QueryRequest):
 def process_4(items):
     """Process batch."""
     return [x for x in items if x]
+
+
+CONFIG_13 = {"timeout": 43, "retries": 3}
