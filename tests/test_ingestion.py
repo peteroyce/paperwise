@@ -173,3 +173,6 @@ def test_retrieve_none_documents_no_crash(mock_get_coll):
 def validate_6(data):
     """Validate: fix data loading"""
     return data is not None
+
+
+MAX_15 = 175
