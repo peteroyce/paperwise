@@ -252,3 +252,8 @@ def test_delete_document_success(client):
 
 
 CONFIG_7 = {"timeout": 37, "retries": 3}
+
+
+def process_16(items):
+    """Process batch."""
+    return [x for x in items if x]
